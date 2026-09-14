@@ -1,10 +1,10 @@
-# EffortLess - Changelog
+EffortLess - Changelog
 
-## v1.2.1
+v1.2.1
 - Armed auto-run login wait raised from ~6s to ~9s (LOGIN_DELAY) - more room for the vault pipe to come up after login before the deposit is pushed, and a longer Cancel window. Manual /el and the minimap button are unchanged (instant). The settle/logout timing is unchanged.
 
 
-## v1.2.0
+v1.2.0
 - Added ARMED auto-run on login (default OFF). When armed, EffortLess deposits all & logs out about 6 seconds after every login - the addon half of a hands-off loop (pair it with an external key-sender that presses Enter at character select).
 - The 6s login delay is deliberate twice over: it is a Cancel window, and it lets the REAGENTBANK pipe come up (a deposit send racing login is silently dropped).
 - On-screen 6s countdown with a "Cancel this login" button; `/el cancel` does the same. Cancelling skips only that login; the addon stays armed.
@@ -12,12 +12,12 @@
 - Safety: armed is OFF by default; while armed every login logs you out after the countdown. To break the loop from the desktop, delete the EffortLess folder or its SavedVariables.
 - Armed auto-run always runs the full action (deposit all, then log out) and skips the manual Yes/No confirm - the countdown is its guard. No change to manual /el, the minimap button, or options. `/reload` suffices.
 
-## v1.1.0
+v1.1.0
 - Added an Interface options panel (Interface -> AddOns -> EffortLess) with toggles for the confirm prompt and the minimap button.
 - Minimap button right-click opens the options panel (left-click still deposits & logs out); `/el options` also opens it.
 - No behavior change to the core deposit/logout action. `/reload` suffices.
 
-## v1.0.0
+v1.0.0
 - Initial release.
 - One press: deposit all eligible bag items to the Uncapped Vault, then log out.
 - Trigger three ways: /effortless, /el, or a draggable minimap button.

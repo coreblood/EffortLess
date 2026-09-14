@@ -2,7 +2,7 @@
 ## Title: EffortLess
 ## Notes: One press - deposit all eligible items to the Vault, then log out.
 ## Author: Mhortai
-## Version: 1.2.0
+## Version: 1.2.1
 ## SavedVariables: EffortLessDB
 
 EffortLess.lua

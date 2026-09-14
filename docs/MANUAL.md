@@ -55,16 +55,16 @@ button, or with **`/el options`**. Two toggles:
 ## Armed auto-run on login
 
 Turn on **Auto-run on login (armed)** (checkbox in the options panel, or `/el arm on`)
-and EffortLess will **deposit all & log out about 6 seconds after every login**. This is
+and EffortLess will **deposit all & log out about 9 seconds after every login**. This is
 the addon half of a hands-off loop: pair it with an external key-sender that presses
 Enter at the character-selection screen, and the cycle runs itself. Armed is **OFF by
 default**.
 
-During those 6 seconds an on-screen countdown shows with a **Cancel this login** button
+During those 9 seconds an on-screen countdown shows with a **Cancel this login** button
 (`/el cancel` does the same). Cancelling skips only that login - the addon stays armed
 for the next one. To stop entirely, untick the box or `/el arm off`.
 
-The 6-second wait is deliberate: it is your cancel window, and it also lets the vault
+The 9-second wait is deliberate: it is your cancel window, and it also lets the vault
 pipe come up after login (a deposit sent too early is silently dropped).
 
 **Escape hatch:** while armed, every login logs you out after the countdown, so you

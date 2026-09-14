@@ -18,7 +18,7 @@ local CAP    = 6.0   -- hard ceiling before logout fires regardless
 
 -- Armed auto-run: on login, wait this long (Cancel window; also lets the
 -- REAGENTBANK pipe come up - a send racing login is silently dropped) then run.
-local LOGIN_DELAY = 6.0
+local LOGIN_DELAY = 9.0
 
 local defaults = { confirm = true, minimap = true, armed = false, mm = nil }
 local db
@@ -103,7 +103,7 @@ local function Trigger(skipConfirm)
 end
 
 -- ---------------------------------------------------------------------------
--- Armed auto-run on login (6s cancellable countdown)
+-- Armed auto-run on login (9s cancellable countdown)
 -- ---------------------------------------------------------------------------
 local armFrame, armLeft
 local function BuildArmFrame()
@@ -230,7 +230,7 @@ local function BuildMinimapButton()
 		GameTooltip:AddLine("Right-click: options.", 1, 1, 1)
 		GameTooltip:AddLine("Drag: move button.", 0.7, 0.7, 0.7)
 		if db.armed then
-			GameTooltip:AddLine("ARMED: auto-runs ~6s after every login.", 1, 0.5, 0.5)
+			GameTooltip:AddLine("ARMED: auto-runs ~9s after every login.", 1, 0.5, 0.5)
 		end
 		GameTooltip:Show()
 	end)
@@ -287,7 +287,7 @@ local function BuildOptionsPanel()
 		function(v) db.minimap = v; UpdateMinimapButton() end)
 
 	cbArm = makeCheck("Armed", "Auto-run on login (armed)",
-		"When on, EffortLess deposits all & logs out ~6s after every login.", -120,
+		"When on, EffortLess deposits all & logs out ~9s after every login.", -120,
 		function(v)
 			db.armed = v
 			if not v then CancelArmed() end
@@ -297,7 +297,7 @@ local function BuildOptionsPanel()
 	warn:SetPoint("TOPLEFT", 40, -144)
 	warn:SetWidth(340); warn:SetJustifyH("LEFT")
 	warn:SetTextColor(1, 0.5, 0.5)
-	warn:SetText("While armed, EVERY login logs you out after a 6s countdown. " ..
+	warn:SetText("While armed, EVERY login logs you out after a 9s countdown. " ..
 		"Cancel that login with the button or /el cancel; untick this or /el arm off to stop. " ..
 		"To break it from the desktop, delete the EffortLess folder or its SavedVariables.")
 
@@ -346,7 +346,7 @@ SlashCmdList["EFFORTLESS"] = function(msg)
 		CancelArmed(true)
 	elseif cmd == "arm" then
 		if arg == "on" then db.armed = true; if cbArm then cbArm:SetChecked(true) end
-			Msg("ARMED - deposits all & logs out ~6s after every login. /el cancel skips one login, /el arm off stops.")
+			Msg("ARMED - deposits all & logs out ~9s after every login. /el cancel skips one login, /el arm off stops.")
 		elseif arg == "off" then db.armed = false; if cbArm then cbArm:SetChecked(false) end; CancelArmed()
 			Msg("disarmed - no auto-run on login.")
 		else Msg("armed is " .. (db.armed and "ON" or "OFF") .. " (/el arm on|off).") end
