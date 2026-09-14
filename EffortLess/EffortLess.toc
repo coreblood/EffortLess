@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: EffortLess
+## Notes: One press - deposit all eligible items to the Vault, then log out.
+## Author: Mhortai
+## Version: 1.0.0
+## SavedVariables: EffortLessDB
+
+EffortLess.lua
