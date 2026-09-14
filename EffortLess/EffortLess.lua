@@ -16,13 +16,18 @@ local VERB = "VLTDEPALL"
 local SETTLE = 1.2   -- seconds of no bag change = deposits settled
 local CAP    = 6.0   -- hard ceiling before logout fires regardless
 
-local defaults = { confirm = true, minimap = true, mm = nil }
+-- Armed auto-run: on login, wait this long (Cancel window; also lets the
+-- REAGENTBANK pipe come up - a send racing login is silently dropped) then run.
+local LOGIN_DELAY = 6.0
+
+local defaults = { confirm = true, minimap = true, armed = false, mm = nil }
 local db
 
 -- forward declarations (locals used inside earlier-built closures)
 local panel
 local OpenOptions
 local UpdateMinimapButton
+local CancelArmed
 
 -- ---------------------------------------------------------------------------
 -- Deposit + logout sequence
@@ -98,6 +103,74 @@ local function Trigger(skipConfirm)
 end
 
 -- ---------------------------------------------------------------------------
+-- Armed auto-run on login (6s cancellable countdown)
+-- ---------------------------------------------------------------------------
+local armFrame, armLeft
+local function BuildArmFrame()
+	if armFrame then return end
+	local f = CreateFrame("Frame", "EffortLessArmFrame", UIParent)
+	f:SetWidth(300); f:SetHeight(70)
+	f:SetPoint("TOP", UIParent, "TOP", 0, -160)
+	f:SetFrameStrata("FULLSCREEN_DIALOG")
+	f:SetBackdrop({
+		bgFile = "Interface\\Buttons\\WHITE8X8",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = false, edgeSize = 14,
+		insets = { left = 4, right = 4, top = 4, bottom = 4 },
+	})
+	f:SetBackdropColor(0, 0, 0, 0.85)
+	f:SetBackdropBorderColor(0.5, 0.35, 1)
+
+	local txt = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	txt:SetPoint("TOP", 0, -12)
+	txt:SetWidth(280); txt:SetJustifyH("CENTER")
+	f.txt = txt
+
+	local cancel = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+	cancel:SetWidth(120); cancel:SetHeight(22)
+	cancel:SetPoint("BOTTOM", 0, 10)
+	cancel:SetText("Cancel this login")
+	cancel:SetScript("OnClick", function() CancelArmed(true) end)
+
+	f:Hide()
+	armFrame = f
+end
+
+local function StartArmedCountdown()
+	if running then return end
+	BuildArmFrame()
+	armLeft = LOGIN_DELAY
+	armFrame.txt:SetText(ADDON .. ": armed - depositing all & logging out")
+	armFrame:Show()
+	armFrame:SetScript("OnUpdate", function(self, elapsed)
+		armLeft = armLeft - elapsed
+		if armLeft <= 0 then
+			self:SetScript("OnUpdate", nil)
+			self:Hide()
+			Msg("armed auto-run - depositing all & logging out.")
+			Activate() -- full action; armed skips the confirm dialog by design
+		else
+			self.txt:SetText(string.format(
+				"%s: armed - deposit all & log out in %d ... (Cancel below or /el cancel)",
+				ADDON, math.ceil(armLeft)))
+		end
+	end)
+end
+
+-- Cancel the pending armed countdown. thisLoginOnly=true keeps armed set.
+CancelArmed = function(thisLoginOnly)
+	if armFrame then
+		armFrame:SetScript("OnUpdate", nil)
+		armFrame:Hide()
+	end
+	if armLeft ~= nil then
+		armLeft = nil
+		Msg("armed auto-run cancelled" ..
+			(db.armed and " (still armed - runs again next login; /el arm off to stop)." or "."))
+	end
+end
+
+-- ---------------------------------------------------------------------------
 -- Minimap button (free-drag, saves exact point; zero dependency)
 -- ---------------------------------------------------------------------------
 local mmbtn
@@ -156,6 +229,9 @@ local function BuildMinimapButton()
 		GameTooltip:AddLine("Left-click: deposit all to Vault & log out.", 1, 1, 1)
 		GameTooltip:AddLine("Right-click: options.", 1, 1, 1)
 		GameTooltip:AddLine("Drag: move button.", 0.7, 0.7, 0.7)
+		if db.armed then
+			GameTooltip:AddLine("ARMED: auto-runs ~6s after every login.", 1, 0.5, 0.5)
+		end
 		GameTooltip:Show()
 	end)
 	b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -175,7 +251,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Options panel (Interface -> AddOns -> EffortLess)
 -- ---------------------------------------------------------------------------
-local cbConfirm, cbMinimap
+local cbConfirm, cbMinimap, cbArm
 local function BuildOptionsPanel()
 	if panel then return end
 	panel = CreateFrame("Frame", "EffortLessOptionsPanel", UIParent)
@@ -210,10 +286,25 @@ local function BuildOptionsPanel()
 		"The draggable bag icon on the minimap rim.", -90,
 		function(v) db.minimap = v; UpdateMinimapButton() end)
 
+	cbArm = makeCheck("Armed", "Auto-run on login (armed)",
+		"When on, EffortLess deposits all & logs out ~6s after every login.", -120,
+		function(v)
+			db.armed = v
+			if not v then CancelArmed() end
+		end)
+
+	local warn = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+	warn:SetPoint("TOPLEFT", 40, -144)
+	warn:SetWidth(340); warn:SetJustifyH("LEFT")
+	warn:SetTextColor(1, 0.5, 0.5)
+	warn:SetText("While armed, EVERY login logs you out after a 6s countdown. " ..
+		"Cancel that login with the button or /el cancel; untick this or /el arm off to stop. " ..
+		"To break it from the desktop, delete the EffortLess folder or its SavedVariables.")
+
 	local hint = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-	hint:SetPoint("TOPLEFT", 16, -128)
+	hint:SetPoint("TOPLEFT", 16, -200)
 	hint:SetWidth(360); hint:SetJustifyH("LEFT")
-	hint:SetText("Slash: /el (act) - /el now (skip prompt) - /el confirm on|off - /el button - /el options")
+	hint:SetText("Slash: /el - /el now - /el confirm on|off - /el button - /el arm on|off - /el cancel - /el options")
 
 	local foot = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
 	foot:SetPoint("BOTTOMLEFT", 16, 16)
@@ -222,6 +313,7 @@ local function BuildOptionsPanel()
 	panel.refresh = function()
 		if cbConfirm then cbConfirm:SetChecked(db.confirm) end
 		if cbMinimap then cbMinimap:SetChecked(db.minimap) end
+		if cbArm then cbArm:SetChecked(db.armed) end
 	end
 	panel:SetScript("OnShow", function() panel.refresh() end)
 
@@ -250,6 +342,14 @@ SlashCmdList["EFFORTLESS"] = function(msg)
 		Trigger(false)
 	elseif cmd == "now" then
 		Trigger(true)
+	elseif cmd == "cancel" then
+		CancelArmed(true)
+	elseif cmd == "arm" then
+		if arg == "on" then db.armed = true; if cbArm then cbArm:SetChecked(true) end
+			Msg("ARMED - deposits all & logs out ~6s after every login. /el cancel skips one login, /el arm off stops.")
+		elseif arg == "off" then db.armed = false; if cbArm then cbArm:SetChecked(false) end; CancelArmed()
+			Msg("disarmed - no auto-run on login.")
+		else Msg("armed is " .. (db.armed and "ON" or "OFF") .. " (/el arm on|off).") end
 	elseif cmd == "options" or cmd == "config" or cmd == "opt" then
 		OpenOptions()
 	elseif cmd == "confirm" then
@@ -261,7 +361,7 @@ SlashCmdList["EFFORTLESS"] = function(msg)
 		UpdateMinimapButton()
 		Msg("minimap button " .. (db.minimap and "shown" or "hidden") .. ".")
 	else
-		Msg("/el = deposit all & log out | /el now = skip confirm | /el confirm on|off | /el button = toggle icon | /el options")
+		Msg("/el = deposit all & log out | /el now = skip confirm | /el confirm on|off | /el button | /el arm on|off | /el cancel | /el options")
 	end
 end
 
@@ -281,5 +381,6 @@ init:SetScript("OnEvent", function(self, event, name)
 		BuildOptionsPanel()
 	elseif event == "PLAYER_LOGIN" then
 		UpdateMinimapButton()
+		if db.armed then StartArmedCountdown() end
 	end
 end)

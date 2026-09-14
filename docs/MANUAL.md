@@ -34,6 +34,8 @@ out, **No** to cancel.
 | `/el confirm on` / `off` | Turn the confirmation prompt on or off. |
 | `/el button` | Show or hide the minimap button. |
 | `/el options` | Open the options panel. |
+| `/el arm on` / `off` | Arm or disarm auto-run on login. |
+| `/el cancel` | Cancel a pending armed countdown (this login only). |
 
 ## The minimap button
 
@@ -49,6 +51,25 @@ button, or with **`/el options`**. Two toggles:
 
 - **Confirm before depositing & logging out** - the Yes/No prompt (same as `/el confirm`).
 - **Show minimap button** - the draggable bag icon (same as `/el button`).
+
+## Armed auto-run on login
+
+Turn on **Auto-run on login (armed)** (checkbox in the options panel, or `/el arm on`)
+and EffortLess will **deposit all & log out about 6 seconds after every login**. This is
+the addon half of a hands-off loop: pair it with an external key-sender that presses
+Enter at the character-selection screen, and the cycle runs itself. Armed is **OFF by
+default**.
+
+During those 6 seconds an on-screen countdown shows with a **Cancel this login** button
+(`/el cancel` does the same). Cancelling skips only that login - the addon stays armed
+for the next one. To stop entirely, untick the box or `/el arm off`.
+
+The 6-second wait is deliberate: it is your cancel window, and it also lets the vault
+pipe come up after login (a deposit sent too early is silently dropped).
+
+**Escape hatch:** while armed, every login logs you out after the countdown, so you
+cannot idle on that character. If you ever get stuck, break the loop from the desktop by
+deleting the `EffortLess` addon folder or its SavedVariables file.
 
 ## What "all items" means
 
