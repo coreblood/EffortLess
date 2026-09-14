@@ -33,12 +33,22 @@ out, **No** to cancel.
 | `/el now` | Deposit all & log out **immediately**, skipping the prompt. |
 | `/el confirm on` / `off` | Turn the confirmation prompt on or off. |
 | `/el button` | Show or hide the minimap button. |
+| `/el options` | Open the options panel. |
 
 ## The minimap button
 
 - **Left-click** activates EffortLess.
 - **Drag** it anywhere; the exact position is saved between sessions.
+- **Right-click** opens the options panel.
 - Hide it with `/el button` if you prefer slash-only use.
+
+## Options panel
+
+Open it from **Interface -> AddOns -> EffortLess**, by **right-clicking** the minimap
+button, or with **`/el options`**. Two toggles:
+
+- **Confirm before depositing & logging out** - the Yes/No prompt (same as `/el confirm`).
+- **Show minimap button** - the draggable bag icon (same as `/el button`).
 
 ## What "all items" means
 

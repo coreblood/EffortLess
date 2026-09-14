@@ -19,6 +19,11 @@ local CAP    = 6.0   -- hard ceiling before logout fires regardless
 local defaults = { confirm = true, minimap = true, mm = nil }
 local db
 
+-- forward declarations (locals used inside earlier-built closures)
+local panel
+local OpenOptions
+local UpdateMinimapButton
+
 -- ---------------------------------------------------------------------------
 -- Deposit + logout sequence
 -- ---------------------------------------------------------------------------
@@ -102,7 +107,7 @@ local function BuildMinimapButton()
 	b:SetWidth(31); b:SetHeight(31)
 	b:SetFrameStrata("MEDIUM")
 	b:SetFrameLevel(8)
-	b:RegisterForClicks("LeftButtonUp")
+	b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	b:RegisterForDrag("LeftButton")
 	b:SetMovable(true)
 	b:SetClampedToScreen(true)
@@ -137,12 +142,19 @@ local function BuildMinimapButton()
 		db.mm = { p = p, rp = rp, x = x, y = y }
 	end)
 
-	b:SetScript("OnClick", function() Trigger(false) end)
+	b:SetScript("OnClick", function(self, button)
+		if button == "RightButton" then
+			OpenOptions()
+		else
+			Trigger(false)
+		end
+	end)
 
 	b:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 		GameTooltip:AddLine(ADDON)
 		GameTooltip:AddLine("Left-click: deposit all to Vault & log out.", 1, 1, 1)
+		GameTooltip:AddLine("Right-click: options.", 1, 1, 1)
 		GameTooltip:AddLine("Drag: move button.", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
@@ -151,12 +163,78 @@ local function BuildMinimapButton()
 	mmbtn = b
 end
 
-local function UpdateMinimapButton()
+function UpdateMinimapButton()
 	if db.minimap then
 		BuildMinimapButton()
 		if mmbtn then mmbtn:Show() end
 	elseif mmbtn then
 		mmbtn:Hide()
+	end
+end
+
+-- ---------------------------------------------------------------------------
+-- Options panel (Interface -> AddOns -> EffortLess)
+-- ---------------------------------------------------------------------------
+local cbConfirm, cbMinimap
+local function BuildOptionsPanel()
+	if panel then return end
+	panel = CreateFrame("Frame", "EffortLessOptionsPanel", UIParent)
+	panel.name = ADDON
+
+	local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	title:SetPoint("TOPLEFT", 16, -16)
+	title:SetText("EffortLess")
+
+	local sub = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+	sub:SetWidth(360); sub:SetJustifyH("LEFT")
+	sub:SetText("One press: deposit all eligible items to the Vault, then log out.")
+
+	local function makeCheck(key, label, tip, y, onToggle)
+		local cb = CreateFrame("CheckButton", "EffortLessOpt" .. key, panel,
+			"InterfaceOptionsCheckButtonTemplate")
+		cb:SetPoint("TOPLEFT", 16, y)
+		_G[cb:GetName() .. "Text"]:SetText(label)
+		cb.tooltipText = tip
+		cb:SetScript("OnClick", function(self)
+			onToggle(self:GetChecked() and true or false)
+		end)
+		return cb
+	end
+
+	cbConfirm = makeCheck("Confirm", "Confirm before depositing & logging out",
+		"When on, a Yes/No prompt appears before EffortLess acts.", -60,
+		function(v) db.confirm = v end)
+
+	cbMinimap = makeCheck("Minimap", "Show minimap button",
+		"The draggable bag icon on the minimap rim.", -90,
+		function(v) db.minimap = v; UpdateMinimapButton() end)
+
+	local hint = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	hint:SetPoint("TOPLEFT", 16, -128)
+	hint:SetWidth(360); hint:SetJustifyH("LEFT")
+	hint:SetText("Slash: /el (act) - /el now (skip prompt) - /el confirm on|off - /el button - /el options")
+
+	local foot = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+	foot:SetPoint("BOTTOMLEFT", 16, 16)
+	foot:SetText("by Mhortai")
+
+	panel.refresh = function()
+		if cbConfirm then cbConfirm:SetChecked(db.confirm) end
+		if cbMinimap then cbMinimap:SetChecked(db.minimap) end
+	end
+	panel:SetScript("OnShow", function() panel.refresh() end)
+
+	if InterfaceOptions_AddCategory then
+		InterfaceOptions_AddCategory(panel)
+	end
+end
+
+OpenOptions = function()
+	if not panel then BuildOptionsPanel() end
+	if InterfaceOptionsFrame_OpenToCategory then
+		InterfaceOptionsFrame_OpenToCategory(panel)
+		InterfaceOptionsFrame_OpenToCategory(panel) -- 3.3.5a: call twice to land on it
 	end
 end
 
@@ -172,6 +250,8 @@ SlashCmdList["EFFORTLESS"] = function(msg)
 		Trigger(false)
 	elseif cmd == "now" then
 		Trigger(true)
+	elseif cmd == "options" or cmd == "config" or cmd == "opt" then
+		OpenOptions()
 	elseif cmd == "confirm" then
 		if arg == "on" then db.confirm = true; Msg("confirmation ON.")
 		elseif arg == "off" then db.confirm = false; Msg("confirmation OFF.")
@@ -181,7 +261,7 @@ SlashCmdList["EFFORTLESS"] = function(msg)
 		UpdateMinimapButton()
 		Msg("minimap button " .. (db.minimap and "shown" or "hidden") .. ".")
 	else
-		Msg("/el = deposit all & log out | /el now = skip confirm | /el confirm on|off | /el button = toggle icon")
+		Msg("/el = deposit all & log out | /el now = skip confirm | /el confirm on|off | /el button = toggle icon | /el options")
 	end
 end
 
@@ -198,6 +278,7 @@ init:SetScript("OnEvent", function(self, event, name)
 		for k, v in pairs(defaults) do
 			if db[k] == nil then db[k] = v end
 		end
+		BuildOptionsPanel()
 	elseif event == "PLAYER_LOGIN" then
 		UpdateMinimapButton()
 	end

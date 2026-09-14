@@ -1,12 +1,12 @@
-# EffortLess - Changelog
+EffortLess - Changelog
 
-## v1.1.0
+v1.1.0
 - Added an Interface options panel (Interface -> AddOns -> EffortLess) with two toggles: "Confirm before depositing & logging out" and "Show minimap button". Same settings as the slash toggles, now with a UI.
 - Minimap button: right-click now opens the options panel (left-click still deposits & logs out).
 - New slash: `/el options` opens the panel.
 - No behavior change to the core deposit/logout action. Lives in the existing file, so `/reload` is enough (no full restart needed).
 
-## v1.0.0
+v1.0.0
 - Initial release.
 - One press: deposit all eligible bag items to the Uncapped Vault, then log out.
 - Trigger three ways: /effortless, /el, or a draggable minimap button.
